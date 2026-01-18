@@ -11,14 +11,39 @@
     return sanitized + ".stl";
   }
 
+  function handleDuplicates(names: string[]): string[] {
+    const nameCount = new Map<string, number>();
+    const result: string[] = [];
+
+    for (const name of names) {
+      if (!nameCount.has(name)) {
+        nameCount.set(name, 0);
+        result.push(name);
+      } else {
+        const count = nameCount.get(name)! + 1;
+        nameCount.set(name, count);
+        // Insert number before .stl extension
+        const newName = name.replace(".stl", `_${count}.stl`);
+        result.push(newName);
+      }
+    }
+
+    return result;
+  }
+
   function handleFileSelect(event: Event) {
     const target = event.target as HTMLInputElement;
     files = target.files;
 
     if (files) {
-      sanitizedNames = Array.from(files).map((file) => ({
+      const sanitized = Array.from(files).map((file) =>
+        sanitizeFileName(file.name),
+      );
+      const uniqueNames = handleDuplicates(sanitized);
+
+      sanitizedNames = Array.from(files).map((file, index) => ({
         original: file.name,
-        sanitized: sanitizeFileName(file.name),
+        sanitized: uniqueNames[index],
       }));
     }
   }
@@ -31,7 +56,7 @@
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const sanitized = sanitizeFileName(file.name);
+      const sanitized = sanitizedNames[i].sanitized;
       const convertedData = await convertSTLToAscii(file);
       zip.file(sanitized, convertedData);
     }
