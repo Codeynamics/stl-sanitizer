@@ -13,6 +13,7 @@
   let sanitizeNames = true;
   let convertToAscii = false;
   let convertToBinary = false;
+  let fixSolidNaming = false;
 
   function sanitizeFileName(fileName: string): string {
     const nameWithoutExt = fileName.replace(/\.stl$/i, "");
@@ -100,6 +101,13 @@
         convertedData = await convertSTLToAscii(file);
       } else if (convertToBinary) {
         convertedData = await convertSTLToBinary(file);
+      } else if (fixSolidNaming) {
+        // Only fix solid names without conversion
+        const textDecoder = new TextDecoder();
+        const text = textDecoder.decode(
+          new Uint8Array(convertedData as ArrayBuffer),
+        );
+        convertedData = fixSolidNames(text, fileName);
       }
 
       zip.file(fileName, convertedData);
@@ -308,7 +316,7 @@
   </label>
 
   {#if files && files.length > 0}
-    <div class="options-row">
+    <div class="options-container">
       <div class="options">
         <label class="checkbox-label">
           <input type="checkbox" bind:checked={sanitizeNames} />
@@ -335,6 +343,11 @@
             }}
           />
           <span>Convert to Binary</span>
+        </label>
+
+        <label class="checkbox-label">
+          <input type="checkbox" bind:checked={fixSolidNaming} />
+          <span>Fix Solid Names</span>
         </label>
       </div>
 
@@ -428,13 +441,16 @@
     font-size: 1.2rem;
   }
 
-  .options-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
+  .options-container {
     margin-top: 1.5rem;
+  }
+
+  .options {
+    display: flex;
+    gap: 2rem;
     flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.5rem;
   }
 
   .options {
@@ -492,6 +508,8 @@
   }
 
   .convert-button {
+    display: block;
+    margin: 0 auto;
     padding: 0.75rem 1.5rem;
     background-color: #00adad;
     color: #000;
