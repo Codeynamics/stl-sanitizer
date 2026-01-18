@@ -1,47 +1,98 @@
-# Svelte + TS + Vite
+# STL File Sanitizer
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+> **Live Demo**: [https://codeynamics.github.io/stl-sanitizer/](https://codeynamics.github.io/stl-sanitizer/)
 
-## Recommended IDE Setup
+A modern web-based tool to clean up STL file names and convert between ASCII and binary formats. Built with Svelte and TypeScript.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+## Features
 
-## Need an official Svelte framework?
+- **Name Sanitization**: Remove spaces and special characters from STL filenames
+- **Format Conversion**: Convert between ASCII and binary STL formats
+- **Smart Naming**: Automatically fix `solid` and `endsolid` names in ASCII STL files
+- **Batch Processing**: Handle multiple files at once
+- **ZIP Export**: Download all processed files as a single ZIP archive
+- **Modern UI**: Clean, dark-themed interface with glassmorphism effects
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+## Usage
 
-## Technical considerations
+> Visit [https://codeynamics.github.io/stl-sanitizer/](https://codeynamics.github.io/stl-sanitizer/) 
 
-**Why use this over SvelteKit?**
+Or run locally:
+1. **Choose STL Files**: Click "Choose STL Files" to select one or more STL files
+2. **Select Options**:
+   - **Sanitize Names**: Remove spaces and special characters (replaces with underscores)
+   - **Convert to ASCII**: Convert binary STL files to ASCII format
+   - **Convert to Binary**: Convert ASCII STL files to binary format
+   - **Fix Solid Names**: Update `solid` and `endsolid` lines to match filename
+3. **Convert**: Click "Convert Now" to process your files
+4. **Download**: Review the changes and download your processed files as a ZIP
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+## => Options Explained
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+### Sanitize Names
+Cleans up filenames by:
+- Removing spaces and special characters
+- Keeping only alphanumeric characters and underscores
+- Handling duplicate names by adding `_1`, `_2`, etc.
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+### Convert to ASCII
+Converts binary STL files to human-readable ASCII format. Automatically applies solid name fixing.
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+### Convert to Binary
+Converts ASCII STL files to compact binary format for smaller file sizes.
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+### Fix Solid Names
+Updates the `solid` and `endsolid` declarations in ASCII STL files to match the filename. Handles multiple solids in a single file by appending `_1`, `_2`, etc.
 
-**Why include `.vscode/extensions.json`?**
+## Development
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+### Prerequisites
+- Node.js v18 or higher
 
-**Why enable `allowJs` in the TS template?**
+### Setup
+```bash
+# Clone the repository
+git clone https://github.com/Codeynamics/stl-sanitizer.git
+cd stl-sanitizer
 
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
+# Install dependencies
+npm install
 
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+# Run development server
+npm run dev
 ```
+
+### Build for Production
+```bash
+npm run build
+```
+
+### Deploy to GitHub Pages
+This project is configured for automatic deployment to GitHub Pages via GitHub Actions. Simply push to the `main` branch and the site will be automatically built and deployed.
+
+## Technologies Used
+
+- **Svelte**: Reactive UI framework
+- **TypeScript**: Type-safe JavaScript
+- **Vite**: Fast build tool
+- **JSZip**: ZIP file generation
+
+## Browser Compatibility
+
+Works on all modern browsers that support:
+- ES6+ JavaScript
+- File API
+- ArrayBuffer
+- Blob URLs
+
+## License
+
+MIT License - feel free to use this project for any purpose.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Acknowledgments
+
+Built with ❤️ for the 3D printing and simulation community
