@@ -32,8 +32,8 @@
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const sanitized = sanitizeFileName(file.name);
-      const fileData = await file.arrayBuffer();
-      zip.file(sanitized, fileData);
+      const convertedData = await convertSTLToAscii(file);
+      zip.file(sanitized, convertedData);
     }
 
     const blob = await zip.generateAsync({ type: "blob" });
@@ -45,6 +45,61 @@
     URL.revokeObjectURL(url);
 
     isProcessing = false;
+  }
+
+  async function convertSTLToAscii(file: File): Promise<string | ArrayBuffer> {
+    const fileData = await file.arrayBuffer();
+    const dataView = new DataView(fileData);
+
+    // Check if file is binary STL
+    const textDecoder = new TextDecoder();
+    const first5Bytes = new Uint8Array(
+      dataView.buffer,
+      0,
+      Math.min(5, dataView.byteLength),
+    );
+    const header = textDecoder.decode(first5Bytes);
+
+    // If it starts with "solid", it's already ASCII
+    if (header.toLowerCase().startsWith("solid")) {
+      return fileData;
+    }
+
+    // Convert binary to ASCII
+    let ascii = "solid converted\n";
+    let offset = 80; // Skip 80-byte header
+
+    const numTriangles = dataView.getUint32(offset, true);
+    offset += 4;
+
+    for (let i = 0; i < numTriangles; i++) {
+      const nx = dataView.getFloat32(offset, true);
+      offset += 4;
+      const ny = dataView.getFloat32(offset, true);
+      offset += 4;
+      const nz = dataView.getFloat32(offset, true);
+      offset += 4;
+
+      ascii += `  facet normal ${nx} ${ny} ${nz}\n`;
+      ascii += "    outer loop\n";
+
+      for (let v = 0; v < 3; v++) {
+        const vx = dataView.getFloat32(offset, true);
+        offset += 4;
+        const vy = dataView.getFloat32(offset, true);
+        offset += 4;
+        const vz = dataView.getFloat32(offset, true);
+        offset += 4;
+        ascii += `      vertex ${vx} ${vy} ${vz}\n`;
+      }
+
+      ascii += "    endloop\n";
+      ascii += "  endfacet\n";
+      offset += 2; // Skip attribute byte count
+    }
+
+    ascii += "endsolid converted\n";
+    return ascii;
   }
 </script>
 
