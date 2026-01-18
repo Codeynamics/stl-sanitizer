@@ -13,6 +13,7 @@
   let sanitizeNames = true;
   let convertToAscii = false;
   let convertToBinary = false;
+  let fixSolidNaming = false;
 
   function sanitizeFileName(fileName: string): string {
     const nameWithoutExt = fileName.replace(/\.stl$/i, "");
@@ -100,6 +101,13 @@
         convertedData = await convertSTLToAscii(file);
       } else if (convertToBinary) {
         convertedData = await convertSTLToBinary(file);
+      } else if (fixSolidNaming) {
+        // Only fix solid names without conversion
+        const textDecoder = new TextDecoder();
+        const text = textDecoder.decode(
+          new Uint8Array(convertedData as ArrayBuffer),
+        );
+        convertedData = fixSolidNames(text, fileName);
       }
 
       zip.file(fileName, convertedData);
@@ -131,14 +139,20 @@
     const header = textDecoder.decode(first5Bytes);
 
     if (header.toLowerCase().startsWith("solid")) {
-      return fileData;
+      // Already ASCII - fix solid/endsolid naming
+      const text = textDecoder.decode(new Uint8Array(fileData));
+      return fixSolidNames(text, file.name);
     }
 
-    let ascii = "solid converted\n";
+    // Convert binary to ASCII
+    let ascii = "";
     let offset = 80;
 
     const numTriangles = dataView.getUint32(offset, true);
     offset += 4;
+
+    const baseFileName = file.name.replace(/\.stl$/i, "");
+    ascii += `solid ${baseFileName}\n`;
 
     for (let i = 0; i < numTriangles; i++) {
       const nx = dataView.getFloat32(offset, true);
@@ -158,7 +172,7 @@
         offset += 4;
         const vz = dataView.getFloat32(offset, true);
         offset += 4;
-        ascii += `      vertex ${vx} ${vy} ${vz}\n`;
+        ascii += `      vertex ${vx} ${vy} ${nz}\n`;
       }
 
       ascii += "    endloop\n";
@@ -166,7 +180,7 @@
       offset += 2;
     }
 
-    ascii += "endsolid converted\n";
+    ascii += `endsolid ${baseFileName}\n`;
     return ascii;
   }
 
@@ -253,6 +267,38 @@
 
     return buffer;
   }
+
+  function fixSolidNames(stlText: string, fileName: string): string {
+    const baseFileName = fileName.replace(/\.stl$/i, "");
+    const lines = stlText.split("\n");
+    const result: string[] = [];
+    let solidCounter = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const lowerLine = line.toLowerCase();
+
+      if (lowerLine.startsWith("solid")) {
+        // Replace solid line with solid <filename> or solid <filename>_N
+        const name =
+          solidCounter === 0 ? baseFileName : `${baseFileName}_${solidCounter}`;
+        result.push(`solid ${name}`);
+        solidCounter++;
+      } else if (lowerLine.startsWith("endsolid")) {
+        // Replace endsolid line with endsolid <filename> or endsolid <filename>_N
+        // Use counter - 1 because we already incremented it
+        const name =
+          solidCounter === 1
+            ? baseFileName
+            : `${baseFileName}_${solidCounter - 1}`;
+        result.push(`endsolid ${name}`);
+      } else {
+        result.push(lines[i]); // Keep original line with whitespace
+      }
+    }
+
+    return result.join("\n");
+  }
 </script>
 
 <main>
@@ -270,7 +316,7 @@
   </label>
 
   {#if files && files.length > 0}
-    <div class="options-row">
+    <div class="options-container">
       <div class="options">
         <label class="checkbox-label">
           <input type="checkbox" bind:checked={sanitizeNames} />
@@ -297,6 +343,11 @@
             }}
           />
           <span>Convert to Binary</span>
+        </label>
+
+        <label class="checkbox-label">
+          <input type="checkbox" bind:checked={fixSolidNaming} />
+          <span>Fix Solid Names</span>
         </label>
       </div>
 
@@ -390,13 +441,16 @@
     font-size: 1.2rem;
   }
 
-  .options-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
+  .options-container {
     margin-top: 1.5rem;
+  }
+
+  .options {
+    display: flex;
+    gap: 2rem;
     flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.5rem;
   }
 
   .options {
@@ -454,6 +508,8 @@
   }
 
   .convert-button {
+    display: block;
+    margin: 0 auto;
     padding: 0.75rem 1.5rem;
     background-color: #00adad;
     color: #000;
